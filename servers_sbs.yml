@@ -55,10 +55,19 @@ Resources:
     Properties:
       UserData: #User given customizations
         Fn::Base64: !Sub |
-          #!/bin/bash
-          sudo apt-get update -y
-          sudo apt-get install apache2 -y
-          sudo systemctl start apache2.service          
+          #!/bin/bash 
+          # Install docker
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          add-apt-repository \
+          "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+          $(lsb_release -cs) \
+          stable"
+          apt-get update
+          apt-get install -y docker-ce
+          usermod -aG docker ubuntu
+          docker run -p 8080:8080 tomcat:8.0
       # ToDo: AMI ID of Ubuntu Linux machine. Too get one, try creating a VM from the web console. 
       ImageId: ami-00ddb0e5626798373
       # ToDo: Change the key-pair name, as applicable to you. 
@@ -78,8 +87,8 @@ Resources:
           !Sub "${EnvironmentName}-PRIV-SNET"
       LaunchConfigurationName:
         Ref: WebAppLaunchConfig
-      MinSize: '1'
-      MaxSize: '3'
+      MinSize: '2'
+      MaxSize: '5'
       TargetGroupARNs:
       - Ref: WebAppTargetGroup
   
