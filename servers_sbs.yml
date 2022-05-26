@@ -7,16 +7,6 @@ Parameters:
         Type: String
 
 Resources:
-  myNetworkAcl: #configuring network ACL to allow jumpbox
-    Type: AWS::EC2::NetworkAcl
-    Properties:
-        VpcId:
-          Fn::ImportValue:
-            !Sub "${EnvironmentName}-VPCID"
-        Tags:
-        - Key: stack
-          Value: production
-
   LBSecGroup: #Load Balancer Security group
     Type: AWS::EC2::SecurityGroup
     Properties:
