@@ -34,35 +34,82 @@ Parameters:
 
 
 Resources:
-    WebAppLaunchConfig:
-      Type: AWS::AutoScaling::LaunchConfiguration
+# create an IAM role for S3 Bucket full access
+    UdacityS3ReadOnlyEC2:
+        Type: "AWS::IAM::Role"
+        Properties: 
+            AssumeRolePolicyDocument: 
+              Version: "2012-10-17"
+              Statement: 
+                - 
+                  Effect: "Allow"
+                  Principal: 
+                    Service: 
+                      - "ec2.amazonaws.com"
+                  Action: 
+                    - "sts:AssumeRole"
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+    LBSecGroup: #Load Balancer Security group
+      Type: AWS::EC2::SecurityGroup
       Properties:
-        UserData: #User given customizations
-          Fn::Base64: !Sub |
-            #!/bin/bash
-            apt-get update -y
-            apt-get install apache2 -y
-            systemctl start apache2.service
-            cd /var/www/html
-            echo "Udacity Demo Web Server Up and Running!" > index.html
-        # ToDo: AMI ID of Ubuntu Linux machine. Too get one, try creating a VM from the web console. 
-        ImageId: ami-005de95e8ff495156
-        # ToDo: Change the key-pair name, as applicable to you. 
-        KeyName: ec2user
-        SecurityGroups:
-        - Ref: WebServerSecGroup #Referencing the web server security group we created earlier
-        InstanceType: t3.medium # machine type and specs
-        BlockDeviceMappings:
-        - DeviceName: "/dev/sdk" #storage location
-          Ebs:
-            VolumeSize: '10' #How much space to allocate for device
+        GroupDescription: Allow http to our load balancer
+        VpcId:
+          Fn::ImportValue:
+            !Sub "${EnvironmentName}-VPCID"
+        SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp #adding new outbound custom rule to allow LBS to communicate with other apps
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
     
+    WebServerSecGroup: #Web ServerSecurity group
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Allow http to our hosts and SSH from local only
+        VpcId:
+          Fn::ImportValue:
+            !Sub "${EnvironmentName}-VPCID"
+        SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+
+    # Attach an instance profile to the role created
+    ServerInstanceProfile: 
+        Type: AWS::IAM::InstanceProfile
+        Properties: 
+          Path: /
+          Roles: 
+            - !Ref UdacityS3ReadOnlyEC2
+            
+
     WebAppGroup:
       Type: AWS::AutoScaling::AutoScalingGroup
       Properties:
         VPCZoneIdentifier:
-        - Fn::ImportValue: 
-            !Sub "${EnvironmentName}-PRIV-SNET"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRI-SNT1"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-PRI-SNT2"
         LaunchConfigurationName:
           Ref: WebAppLaunchConfig
         MinSize: '4'
@@ -106,61 +153,40 @@ Resources:
     WebAppTargetGroup:
       Type: AWS::ElasticLoadBalancingV2::TargetGroup
       Properties:
-        HealthCheckIntervalSeconds: 60
+        HealthCheckIntervalSeconds: 30
         HealthCheckPath: /
         HealthCheckProtocol: HTTP
         HealthCheckTimeoutSeconds: 8
         HealthyThresholdCount: 2
-        Port: 8080
+        Port: 80
         Protocol: HTTP
         UnhealthyThresholdCount: 5
         VpcId: 
           Fn::ImportValue:
             Fn::Sub: "${EnvironmentName}-VPCID"
 
-    LBSecGroup: #Load Balancer Security group
-      Type: AWS::EC2::SecurityGroup
+    WebAppLaunchConfig:
+      Type: AWS::AutoScaling::LaunchConfiguration
       Properties:
-        GroupDescription: Allow http to our load balancer
-        VpcId:
-          Fn::ImportValue:
-            !Sub "${EnvironmentName}-VPCID"
-        SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp #adding new outbound custom rule to allow LBS to communicate with other apps
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
-    
-    WebServerSecGroup: #Web ServerSecurity group
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: Allow http to our hosts and SSH from local only
-        VpcId:
-          Fn::ImportValue:
-            !Sub "${EnvironmentName}-VPCID"
-        SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 0
-          ToPort: 65535
-          CidrIp: 0.0.0.0/0
+        UserData: #User given customizations
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            apt-get update -y
+            apt-get install apache2 -y
+            systemctl start apache2.service
+            cd /var/www/html
+            echo "Udacity Demo Web Server Up and Running!" > index.html
+        # ToDo: AMI ID of Ubuntu Linux machine. Too get one, try creating a VM from the web console. 
+        ImageId: ami-005de95e8ff495156
+        # ToDo: Change the key-pair name, as applicable to you. 
+        KeyName: ec2user
+        SecurityGroups:
+        - Ref: WebServerSecGroup #Referencing the web server security group we created earlier
+        InstanceType: t2.micro # machine type and specs
+        BlockDeviceMappings:
+        - DeviceName: "/dev/sdk" #storage location
+          Ebs:
+            VolumeSize: '10' #How much space to allocate for device
 
 Outputs:
   # output for the load balancer details
