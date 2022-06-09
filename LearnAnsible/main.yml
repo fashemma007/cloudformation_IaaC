@@ -21,3 +21,4 @@
     - setup:
   roles:
     - configure-server
+    - prometheus
