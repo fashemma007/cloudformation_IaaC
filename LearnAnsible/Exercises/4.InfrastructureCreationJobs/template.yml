@@ -11,7 +11,7 @@ Resources:
       InstanceType: t2.micro
       Tags:
           - Key: "Name"
-            Value: myStack-${CIRCLE_WORKFLOW_ID:0:5}
+            Value: infcj_instance
 
 # The below code is the run in terminal to pass the instance PublicIPAddress to the the inventory file for ansible to retrieve later
 # """aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress'  --filters "Name=tag:Name,Values=ansible-instance" --output text >> inventory"""
