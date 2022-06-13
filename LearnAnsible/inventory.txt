@@ -1,5 +1,5 @@
 [web]
 34.235.114.19
 
-[ubuntu]
-54.175.95.100
+[all]
+ec2-54-175-95-100.compute-1.amazonaws.com
