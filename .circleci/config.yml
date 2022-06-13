@@ -74,8 +74,8 @@ jobs:
       - run:
           name: Configure server
           command: |
-            ansible-playbook -i LearnAnsible/inventory.txt LearnAnsible/Exercises/4.InfrastructureCreationJobs/main4.yml
-
+            ansible-playbook -i LearnAnsible/inventory.txt LearnAnsible/Exercises/4.InfrastructureCreationJobs/main4.yml --key-file ~/.ssh/id_rsa_a1ec5ebb0efc454ba0c93ef9245f9271
+            
 # ["a1:ec:5e:bb:0e:fc:45:4b:a0:c9:3e:f9:24:5f:92:71"] # You can get this ID using `ssh-keygen -E md5 -lf ~/udacity-ansible.pem`
     
 
