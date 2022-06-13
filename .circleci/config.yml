@@ -57,7 +57,24 @@ jobs:
       # Fail the job intentionally to simulate an error.
       # Uncomment the line below if you want to fail the current step
       # - run: return 1
-      # - destroy_environment
+      - destroy_environment
+  # Exercise: Config and Deployment
+  configure_infrastructure: 
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["4b:6a:a3:c5:a9:28:6e:bf:89:00:e7:5a:74:ca:b7:aa"]
+      - run:
+          name: Install dependencies
+          command: |
+            # install the dependencies needed for your playbook
+            apk add --update ansible 
+      - run:
+          name: Configure server
+          command: |
+            ansible-playbook -i inventory.txt main4.yml
 
 # ["a1:ec:5e:bb:0e:fc:45:4b:a0:c9:3e:f9:24:5f:92:71"] # You can get this ID using `ssh-keygen -E md5 -lf ~/udacity-ansible.pem`
     
