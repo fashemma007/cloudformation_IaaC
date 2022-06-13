@@ -57,7 +57,7 @@ jobs:
       # Fail the job intentionally to simulate an error.
       # Uncomment the line below if you want to fail the current step
       # - run: return 1
-      - destroy_environment
+      # - destroy_environment
 
 # ["a1:ec:5e:bb:0e:fc:45:4b:a0:c9:3e:f9:24:5f:92:71"] # You can get this ID using `ssh-keygen -E md5 -lf ~/udacity-ansible.pem`
     
