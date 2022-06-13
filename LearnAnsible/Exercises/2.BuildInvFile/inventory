@@ -1,2 +1,4 @@
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress'  --filters "Name=tag:Name,Values=ansible-instance" --output text >> inventory
+
 [all]
 54.236.118.67
